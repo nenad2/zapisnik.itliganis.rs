@@ -2392,9 +2392,7 @@ export default function Zapisnik() {
       <div className="bg-gray-900 border-b border-gray-800 px-4 py-3 flex flex-col items-center">
         <div
           className={`clock-digits font-sans font-extrabold tabular-nums leading-none transition-all ${
-            running
-              ? "text-yellow-400 [text-shadow:0_0_40px_rgba(234,179,8,0.5)]"
-              : isFullTime ? "text-red-400" : "text-yellow-300"
+            isFullTime ? "text-red-400" : "text-white"
           }`}
           /* VELIČINA SATA */
           style={{ fontSize: "clamp(3.5rem, 20vw, 30rem)", letterSpacing: "-0.02em" }}

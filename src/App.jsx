@@ -1,4 +1,4 @@
-import FutsalTracker from "./FutsalTracker";
+import Zapisnik from "./Zapisnik";
 export default function App() {
-  return <FutsalTracker />;
+  return <Zapisnik />;
 }

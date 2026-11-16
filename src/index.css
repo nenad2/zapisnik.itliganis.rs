@@ -1,3 +1,112 @@
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Globalni izgled ─────────────────────────────────────────────────────── */
+@layer base {
+  html {
+    @apply font-sans bg-gray-950;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    /* Inter: lepše cifre i slova (jednostavno "a", ravno "1", "l" sa repom) */
+    font-feature-settings: "cv05", "cv08", "cv11", "ss03";
+  }
+
+  ::selection {
+    background: rgb(250 204 21 / 0.35);
+    color: #fff;
+  }
+
+  /* Tanak, diskretan scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(75 85 99 / 0.6) transparent;
+  }
+
+  /* ── Dugmići ──────────────────────────────────────────────────────────────
+     Važi za sva dugmad koja imaju pozadinu (bg-*). Specifičnost je namerno
+     niska (button:where(...)), pa Tailwind klase na samom dugmetu i dalje
+     imaju prednost ako nešto treba posebno podesiti. */
+  button:where([class*="bg-"]:not([class*="bg-transparent"])) {
+    background-image: linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.14) 0%,
+      rgb(255 255 255 / 0.02) 55%,
+      rgb(0 0 0 / 0.06) 100%
+    );
+    box-shadow:
+      inset 0 1px 0 0 rgb(255 255 255 / 0.10),
+      inset 0 0 0 1px rgb(255 255 255 / 0.05),
+      0 1px 2px 0 rgb(0 0 0 / 0.40),
+      0 6px 16px -8px rgb(var(--glow, 0 0 0) / 0.60);
+    letter-spacing: 0.01em;
+  }
+
+
+  /* Akcentna (obojena) dugmad dobijaju blagi sjaj u svojoj boji */
+  button:where([class*="bg-emerald-5"], [class*="bg-emerald-6"], [class*="bg-emerald-7"]):not(:disabled) { --glow: 16 185 129; }
+  button:where([class*="bg-blue-5"], [class*="bg-blue-6"], [class*="bg-blue-7"]):not(:disabled) { --glow: 59 130 246; }
+  button:where([class*="bg-yellow-4"], [class*="bg-yellow-5"], [class*="bg-amber-5"], [class*="bg-amber-6"]):not(:disabled) { --glow: 234 179 8; }
+  button:where([class*="bg-red-5"], [class*="bg-red-6"], [class*="bg-red-7"], [class*="bg-red-8"]):not(:disabled) { --glow: 239 68 68; }
+  button:where([class*="bg-orange-5"], [class*="bg-orange-6"], [class*="bg-orange-7"]):not(:disabled) { --glow: 249 115 22; }
+
+
+  button {
+    -webkit-tap-highlight-color: transparent;
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform, translate, filter;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    transition-duration: 180ms;
+  }
+
+  @media (hover: hover) {
+    button:where([class*="bg-"]:not([class*="bg-transparent"])):hover:not(:disabled) {
+      translate: 0 -1px;
+      filter: brightness(1.06) saturate(1.05);
+      box-shadow:
+        inset 0 1px 0 0 rgb(255 255 255 / 0.14),
+        inset 0 0 0 1px rgb(255 255 255 / 0.07),
+        0 2px 4px 0 rgb(0 0 0 / 0.35),
+        0 12px 28px -10px rgb(var(--glow, 0 0 0) / 0.80);
+    }
+  }
+
+  button:where([class*="bg-"]:not([class*="bg-transparent"])):active:not(:disabled) {
+    translate: 0 0;
+    filter: brightness(0.96);
+    box-shadow:
+      inset 0 2px 4px 0 rgb(0 0 0 / 0.30),
+      inset 0 0 0 1px rgb(255 255 255 / 0.04);
+  }
+
+  button:disabled,
+  button[class*="cursor-not-allowed"] {
+    background-image: none;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.04);
+    filter: none;
+    translate: 0 0;
+  }
+
+  button:focus-visible {
+    outline: 2px solid rgb(250 204 21 / 0.85);
+    outline-offset: 2px;
+  }
+
+  /* Polja za unos: mekši fokus */
+  input,
+  select,
+  textarea {
+    transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+  }
+}
+
+@layer components {
+  /* Veliki sat: moderan sans font sa ciframa iste širine */
+  .clock-digits {
+    font-feature-settings: "tnum", "cv05", "ss01", "zero" 0;
+    font-variation-settings: "opsz" 32;
+  }
+}

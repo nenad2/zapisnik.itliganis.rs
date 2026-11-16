@@ -1,9 +1,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// FutsalTracker.jsx — Futsal Match Statistics App with Card System
+// Zapisnik.jsx — Zapisnik IT Liga Niš (statistika mečeva, kartoni, zapisnik)
 // Dependencies: React (hooks), Tailwind CSS, jsPDF (loaded dynamically via CDN)
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import logoLiga from "./assets/logo-liga.png";
 
 // ── SheetJS (xlsx) dynamic loader ────────────────────────────────────────────
 async function getXLSX() {
@@ -19,7 +20,26 @@ async function getXLSX() {
 }
 
 // ── localStorage persistence ──────────────────────────────────────────────────
-const STORAGE_KEY = "futsal-tracker-match-v1";
+const STORAGE_KEY = "zapisnik-match-v1";
+
+// Jednokratna migracija starih ključeva ("futsal-tracker-*") na nove ("zapisnik-*"),
+// da korisnici ne izgube meč u toku ili keširane ekipe posle preimenovanja.
+(function migrateLegacyStorage() {
+  try {
+    const OLD = "futsal-tracker-";
+    const NEW = "zapisnik-";
+    const oldKeys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(OLD)) oldKeys.push(k);
+    }
+    for (const k of oldKeys) {
+      const nk = NEW + k.slice(OLD.length);
+      if (localStorage.getItem(nk) === null) localStorage.setItem(nk, localStorage.getItem(k));
+      localStorage.removeItem(k);
+    }
+  } catch { /* localStorage nedostupan */ }
+})();
 
 function saveMatchToStorage(state) {
   try {
@@ -57,8 +77,8 @@ const LEAGUES = [
 ];
 
 // ── Pamćenje u browseru: izabrana liga + keš ekipa po ligi ─────────────────────
-const LEAGUE_KEY = "futsal-tracker-league-v1";
-const leagueCacheKey = (id) => `futsal-tracker-league-teams-v1:${id}`;
+const LEAGUE_KEY = "zapisnik-league-v1";
+const leagueCacheKey = (id) => `zapisnik-league-teams-v1:${id}`;
 
 function loadSelectedLeague() {
   try {
@@ -433,7 +453,7 @@ function GoalStrip({ goals, players, allPlayers, align = "left", onEdit, onDelet
       <div className="space-y-1 mt-1">
         {goals.map((g, i) => {
           const player = players.find((p) => p.id === g.playerId);
-          const num = player?.num || g.snapNum || "?";
+          const num = player?.num || g.snapNum || "";
           const name = player?.name || g.snapName || "Unknown";
           return (
             <div key={i} className={`flex items-center gap-1.5 text-xs group ${align === "right" ? "flex-row-reverse" : ""}`}>
@@ -441,7 +461,7 @@ function GoalStrip({ goals, players, allPlayers, align = "left", onEdit, onDelet
                 {g.clockMin}&apos;
               </span>
               <span className="text-gray-300 flex-1">
-                <span className="text-white font-semibold">#{num}</span> {name}
+                {num && <span className="text-white font-semibold">#{num} </span>}{name}
               </span>
               <div className={`flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ${align === "right" ? "flex-row-reverse" : ""}`}>
                 <button
@@ -472,7 +492,7 @@ function GoalStrip({ goals, players, allPlayers, align = "left", onEdit, onDelet
       )}
       {deletingIdx !== null && (
         <DeleteConfirmModal
-          label={`Gol u ${goals[deletingIdx].clockMin}' — #${goals[deletingIdx].snapNum || "?"} ${goals[deletingIdx].snapName || ""}`}
+          label={`Gol u ${goals[deletingIdx].clockMin}' — ${goals[deletingIdx].snapNum ? `#${goals[deletingIdx].snapNum} ` : ""}${goals[deletingIdx].snapName || ""}`}
           onConfirm={() => { onDelete(deletingIdx); setDeletingIdx(null); }}
           onClose={() => setDeletingIdx(null)}
         />
@@ -492,7 +512,7 @@ function CardStrip({ cards, players, allPlayers, align = "left", onEdit, onDelet
       <div className="space-y-1 mt-1">
         {cards.map((c, i) => {
           const player = players.find((p) => p.id === c.playerId);
-          const num = player?.num || c.snapNum || "?";
+          const num = player?.num || c.snapNum || "";
           const name = player?.name || c.snapName || "Unknown";
           const isRed = c.type === "red";
           return (
@@ -502,7 +522,7 @@ function CardStrip({ cards, players, allPlayers, align = "left", onEdit, onDelet
               </span>
               <span className={`inline-block w-2.5 h-3.5 rounded-sm shrink-0 ${isRed ? "bg-red-500" : "bg-yellow-400"}`} />
               <span className="text-gray-300 flex-1">
-                <span className="text-white font-semibold">#{num}</span> {name}
+                {num && <span className="text-white font-semibold">#{num} </span>}{name}
                 {c.auto && <span className="text-red-400 text-[10px] ml-1">(2Y→R)</span>}
               </span>
               {!c.auto && (
@@ -536,7 +556,7 @@ function CardStrip({ cards, players, allPlayers, align = "left", onEdit, onDelet
       )}
       {deletingIdx !== null && (
         <DeleteConfirmModal
-          label={`${cards[deletingIdx].type === "red" ? "Crveni" : "Žuti"} karton u ${cards[deletingIdx].clockMin}' — #${cards[deletingIdx].snapNum || "?"} ${cards[deletingIdx].snapName || ""}`}
+          label={`${cards[deletingIdx].type === "red" ? "Crveni" : "Žuti"} karton u ${cards[deletingIdx].clockMin}' — ${cards[deletingIdx].snapNum ? `#${cards[deletingIdx].snapNum} ` : ""}${cards[deletingIdx].snapName || ""}`}
           onConfirm={() => { onDelete(deletingIdx); setDeletingIdx(null); }}
           onClose={() => setDeletingIdx(null)}
         />
@@ -1004,7 +1024,7 @@ function MatchTimeline({ homeGoals, awayGoals, homeCards, awayCards,
         const isHome = ev.side === "home";
         const players = isHome ? homePlayers : awayPlayers;
         const player = players.find((p) => p.id === ev.playerId);
-        const num = player?.num || ev.snapNum || "?";
+        const num = player?.num || ev.snapNum || "";
         const name = player?.name || ev.snapName || "?";
         const teamName = isHome ? homeTeam : awayTeam;
 
@@ -1021,7 +1041,7 @@ function MatchTimeline({ homeGoals, awayGoals, homeCards, awayCards,
               <span className="text-lg shrink-0">⚽</span>
               <div className="flex-1 min-w-0">
                 <div className={`text-[10px] font-bold uppercase tracking-widest ${isHome ? "text-blue-400" : "text-orange-400"}`}>{teamName.toUpperCase()}</div>
-                <div className="text-white text-xs font-semibold truncate">#{num} {name}</div>
+                <div className="text-white text-xs font-semibold truncate">{num && `#${num} `}{name}</div>
               </div>
             </div>
           );
@@ -1043,7 +1063,7 @@ function MatchTimeline({ homeGoals, awayGoals, homeCards, awayCards,
             <div className="flex-1 min-w-0">
               <div className={`text-[10px] font-bold uppercase tracking-widest ${isHome ? "text-blue-400" : "text-orange-400"}`}>{teamName.toUpperCase()}</div>
               <div className="text-white text-xs font-semibold truncate">
-                #{num} {name}
+                {num && `#${num} `}{name}
                 {ev.auto && <span className="text-red-400 text-[10px] ml-1">(2Y→R)</span>}
               </div>
             </div>
@@ -1322,14 +1342,16 @@ function MatchCloseModal({ homeTeam, awayTeam, homeGoals, awayGoals,
   const formatGoals = (goals, players) =>
     goals.map((g) => {
       const p = players.find((pl) => pl.id === g.playerId);
-      return `${g.clockMin}' #${p?.num || g.snapNum || "?"} ${p?.name || g.snapName || "?"}`;
+      const n = p?.num || g.snapNum;
+      return `${g.clockMin}' ${n ? `#${n} ` : ""}${p?.name || g.snapName || "?"}`;
     }).join(", ") || "—";
 
   const formatCards = (cards, players) =>
     cards.map((c) => {
       const p = players.find((pl) => pl.id === c.playerId);
       const type = c.type === "red" ? (c.auto ? "RC(2Y)" : "RC") : "YC";
-      return `${c.clockMin}' ${type} #${p?.num || c.snapNum || "?"} ${p?.name || c.snapName || "?"}`;
+      const n = p?.num || c.snapNum;
+      return `${c.clockMin}' ${type} ${n ? `#${n} ` : ""}${p?.name || c.snapName || "?"}`;
     }).join(", ") || "—";
 
   const sendAll = async () => {
@@ -1611,8 +1633,7 @@ function HelpPage({ onBack }) {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col"
-      style={{ fontFamily: "'Inter','Segoe UI',system-ui,sans-serif" }}>
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-800 shrink-0">
         <button
@@ -1689,8 +1710,7 @@ function HistoryPage({ onBack }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col"
-      style={{ fontFamily: "'Inter','Segoe UI',system-ui,sans-serif" }}>
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
 
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-800 shrink-0">
@@ -1822,7 +1842,7 @@ function HistoryPage({ onBack }) {
 }
 
 // ── App Root ──────────────────────────────────────────────────────────────────
-export default function FutsalTracker() {
+export default function Zapisnik() {
   const saved = useRef(loadMatchFromStorage());
   const s = saved.current;
 
@@ -2283,8 +2303,7 @@ export default function FutsalTracker() {
   if (page === "help") return <HelpPage onBack={() => setPage("tracker")} />;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col select-none"
-      style={{ fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif" }}>
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col select-none">
 
       {/* Restored from storage notice */}
       {restoredMsg && (
@@ -2296,7 +2315,7 @@ export default function FutsalTracker() {
       {/* Topbar */}
       <header className="flex items-center justify-between px-4 py-2.5 bg-gray-900 border-b border-gray-800 shrink-0">
         <div className="flex items-center gap-2">
-          <img src="/src/assets/logo-liga.png" alt="" className="h-6 w-auto object-contain" />
+          <img src={logoLiga} alt="" className="h-6 w-auto object-contain" />
           <span className="text-white font-black tracking-[0.2em] uppercase text-xs hidden sm:block">
             IT LIGA++ NIŠ
           </span>
@@ -2372,13 +2391,13 @@ export default function FutsalTracker() {
       {/* SAT */}
       <div className="bg-gray-900 border-b border-gray-800 px-4 py-3 flex flex-col items-center">
         <div
-          className={`font-mono font-black tabular-nums leading-none transition-all ${
+          className={`clock-digits font-sans font-extrabold tabular-nums leading-none transition-all ${
             running
               ? "text-yellow-400 [text-shadow:0_0_40px_rgba(234,179,8,0.5)]"
               : isFullTime ? "text-red-400" : "text-yellow-300"
           }`}
           /* VELIČINA SATA */
-          style={{ fontSize: "clamp(3.5rem, 20vw, 30rem)", letterSpacing: "0.05em" }}
+          style={{ fontSize: "clamp(3.5rem, 20vw, 30rem)", letterSpacing: "-0.02em" }}
         >
           {secsToDisplay(secs)}
         </div>
